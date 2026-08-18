@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Akai Push 1 MIDI mapping for Mixxx 2.5.6
+    Character Map Test - MVP v0.1
+    Displays all 128 characters on LCD at init.
+-->
+<MixxxMIDIPreset schemaVersion="1" mixxxVersion="2.0+">
+    <info>
+        <name>Akai Push 1</name>
+        <author>Push1Mixxx</author>
+        <description>Akai Push 1 (original) mapping for Mixxx 2.5.6. Character map test with LCD SysEx output.</description>
+    </info>
+    <controller id="Akai Push 1" port="">
+        <scriptfiles>
+            <file functionprefix="AkaiPush" filename="Akai-Push-scripts.js"/>
+        </scriptfiles>
+        <controls/>
+        <outputs/>
+    </controller>
+</MixxxMIDIPreset>
