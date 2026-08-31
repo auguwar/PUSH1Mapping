@@ -66,6 +66,43 @@ function clearLCD() {
 | `docs/mixxx-controls-reference.md` | Mixxx CO catalog |
 | `docs/components-js-reference.md` | Components JS API |
 | `sysextests/*.syx` | Captured SysEx from Ableton Live |
+| `tools/push_lcd_simulator.py` | Virtual LCD terminal simulator (curses, virtual MIDI port) |
+| `tools/send_test_sysex.py` | Send test SysEx to simulator/hardware without Mixxx |
+
+## LCD Simulator
+
+Run `python3 tools/push_lcd_simulator.py` (optionally `--port NAME`). It creates
+a MIDI port **pair** under the same name: a virtual *source* (= Mixxx input,
+needed for Mixxx to list the controller) plus a virtual *destination* (= Mixxx
+output, where Mixxx sends the SysEx). **Start/restart Mixxx after** the tool is
+running, then in Mixxx Preferences > MIDI Controllers select the port and assign
+the "Akai Push 1" preset. Test without Mixxx: `python3 tools/send_test_sysex.py
+--port "Push LCD Simulator" --chars-all` (full 128-char map) or `--text "hi"`.
+
+**Gotcha 1 (detection):** Mixxx only builds its detected-controllers list from
+MIDI *input* devices (sources) and links a same-named *output* to them. A
+virtual destination alone (MidiIn virtual port) never shows up — Mixxx reports
+"did not detect any controllers". You must also create a virtual source
+(`MidiOut.open_virtual_port` with the same name) in the simulator.
+
+**Gotcha 2 (python-rtmidi 1.5.8, macOS):** the MIDI callback receives the
+message as a packed `(byte_list, delta_time)` tuple, not a bare byte list.
+Iterating that tuple crashes with `ord() expected string of length 1, but list
+found` inside the rtmidi thread; the exception kills the delivery thread and
+the simulator silently shows 0 messages. Always normalize with
+`unwrap_message()` (in `push_lcd_simulator.py`) before parsing bytes.
+
+**Gotcha 3 (curses `addnstr` overload, simulator rendering):** Python curses
+signatures are `addstr([y,x,] str[, attr])` and `addnstr([y,x,] str, n[, attr])`.
+A helper in the simulator used `stdscr.addnstr(y, x, text, attr)` — with four
+positional args the 4th is parsed as `n` (max chars), NOT attr. Result: text
+with `attr=0` (plain printable LCD content, log entries, footer) wrote **zero**
+characters (invisible), while text with a nonzero attr (special `·` bytes,
+status bar, log header) "worked". Symptom on the digital display: `·` dots are
+visible but printable text (fader `[######]`, legends, charmap 32-126) never
+shows, and the SysEx log panel looks empty. Fix: pre-slice and use
+`stdscr.addstr(y, x, text[:limit], attr)` (addstr has no `n`). Verified by
+testing both variants and by pty screen reconstruction.
 
 ## SysEx Capture Validation
 

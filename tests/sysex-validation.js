@@ -171,6 +171,46 @@ SysExTest.testReferenceCaptureRandomLevels = function() {
     SysExTest.assertArrayEq(built.slice(8, 30), captured.slice(8, 30), 'Captured randomlvls vs built: text matches');
 };
 
+// --- Fader Rendering Tests ---
+
+SysExTest.FADER_WIDTH = 6;
+SysExTest.FADER_FILL = '#';
+SysExTest.FADER_EMPTY = '-';
+
+SysExTest.renderFaderBar = function(value) {
+    if (value < 0) value = 0;
+    if (value > 1) value = 1;
+
+    var filled = Math.round(value * SysExTest.FADER_WIDTH);
+    var bar = '[';
+    for (var i = 0; i < SysExTest.FADER_WIDTH; i++) {
+        bar += (i < filled) ? SysExTest.FADER_FILL : SysExTest.FADER_EMPTY;
+    }
+    bar += ']';
+    return bar;
+};
+
+SysExTest.testFaderZero = function() {
+    SysExTest.assertEq(SysExTest.renderFaderBar(0.0), '[------]', 'Fader at 0% is all empty');
+};
+
+SysExTest.testFaderFull = function() {
+    SysExTest.assertEq(SysExTest.renderFaderBar(1.0), '[######]', 'Fader at 100% is all full');
+};
+
+SysExTest.testFaderHalf = function() {
+    SysExTest.assertEq(SysExTest.renderFaderBar(0.5), '[###---]', 'Fader at 50% is half full');
+};
+
+SysExTest.testFaderQuarter = function() {
+    SysExTest.assertEq(SysExTest.renderFaderBar(0.25), '[##----]', 'Fader at 25% is quarter full');
+};
+
+SysExTest.testFaderOutOfRange = function() {
+    SysExTest.assertEq(SysExTest.renderFaderBar(-0.5), '[------]', 'Fader clamps negative values');
+    SysExTest.assertEq(SysExTest.renderFaderBar(1.5), '[######]', 'Fader clamps values above 1');
+};
+
 // --- Run All Tests ---
 
 SysExTest.runAll = function() {
@@ -183,6 +223,11 @@ SysExTest.runAll = function() {
     SysExTest.testCharacterRange();
     SysExTest.testReferenceCaptureClipSelection();
     SysExTest.testReferenceCaptureRandomLevels();
+    SysExTest.testFaderZero();
+    SysExTest.testFaderFull();
+    SysExTest.testFaderHalf();
+    SysExTest.testFaderQuarter();
+    SysExTest.testFaderOutOfRange();
     print('=== Tests Complete ===');
 };
 
