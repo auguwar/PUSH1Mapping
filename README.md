@@ -78,6 +78,19 @@ Node con el runtime disponible en la máquina). Incluyen casos del fader (0 %,
 100 %, 50 %, 25 %, clamping) y validación de los mensajes contra las capturas
 `.syx` de referencia.
 
+## Layout de pantalla
+
+El LCD se divide en dos **decks**: deck 1 (izquierda) = `[Channel1]`, deck 2 (derecha) = `[Channel2]`. Cada deck ocupa 34 de los 68 caracteres.
+
+| Línea | Contenido por deck |
+|-------|--------------------|
+| 1 | Porcentajes de EQ LOW / MID / HI y VOL (0–100% cut, 100–200% boost alrededor del neutro en 100%) |
+| 2 | Etiquetas `LOW MID HI VOL` bajo cada porcentaje |
+| 3 | Vúmetro pre-master (barra estéreo combinada, pico con hold fijo + decaimiento) + `CH A -MM:SS` (tiempo restante; `---:--` sin track) y `L` si el deck tiene un loop activo |
+| 4 | Reservada |
+
+El tiempo restante se calcula desde `playposition` y `duration` de cada `[ChannelN]`, formateado como `-MM:SS` (minutos capados a 99, sin horas). Se actualiza con un timer de 1 s (el VU usa otro de 50 ms).
+
 ## Gotchas conocidas
 
 - **Detección Mixxx:** Mixxx solo lista controladores desde dispositivos MIDI de
