@@ -48,6 +48,37 @@ function clearLCD() {
 }
 ```
 
+### Physical Display Layout (MANDATORY for all UI design)
+
+The 68-character LCD line maps to **4 physical segments of 17 chars**. Each
+segment sits under **2 knobs** (the 8 knobs above the display) and is laid out
+as: `8 chars (left knob) + 1 space + 8 chars (right knob)`. Always respect
+these physical divisions or the text appears crammed relative to the knobs.
+
+```
+segment 1        segment 2        segment 3        segment 4
+| 8 |1| 8 |      | 8 |1| 8 |      | 8 |1| 8 |      | 8 |1| 8 |
+```
+
+Segment boundaries at absolute columns `8 / 25 / 42 / 59` (the knob
+separators). Column positions:
+
+| Segment | Cols | Left knob | Separator | Right knob |
+|---------|------|-----------|-----------|------------|
+| 1 | 0-16  | 0-7  | 8  | 9-16  |
+| 2 | 17-33 | 17-24| 25 | 26-33 |
+| 3 | 34-50 | 34-41| 42 | 43-50 |
+| 4 | 51-67 | 51-58| 59 | 60-67 |
+
+Knob↔parameter mapping (mixer view): `seg1: d1LOW,d1MID | seg2: d1HI,d1VOL |
+seg3: d2LOW,d2MID | seg4: d2HI,d2VOL`. Content is **centered** within each
+8-char block; the separator column is always the literal space character.
+
+Row 3 (VU + deck info) follows the same 4x17 grid: each deck spans 2 segments.
+The 16-char VU bar occupies cols `0-15` (deck1) / `34-49` (deck2) as a
+continuous widget, col `16`/`50` is the closing space, and the `CH A -MM:SS [L]`
+info is centered in the deck's second segment (`17-33` / `51-67`).
+
 ## Mixxx Script Conventions
 
 - No ES6+ (Mixxx uses an older JS engine)

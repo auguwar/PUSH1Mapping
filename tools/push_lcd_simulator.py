@@ -238,6 +238,10 @@ def draw_simulator(stdscr, state, port_name, show_log, log_n, special_attr):
                             addn(y, inner_left + run_start, run, attrs[run_start])
                         run_start = i
                 stdscr.addstr(y, lcd_left + 2 + LCD_WIDTH, '│')
+                # physical segment guides: the 68-char line is 4 segments of 17
+                # (8 + 1 space + 8 knobs); separators sit at cols 8/25/42/59.
+                for sep_col in (8, 25, 42, 59):
+                    addn(y, inner_left + sep_col, '│', curses.A_DIM)
             except curses.error:
                 pass
         addn(box_top + 1 + LCD_LINES, lcd_left,

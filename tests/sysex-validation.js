@@ -354,6 +354,108 @@ SysExTest.testRenderDeckInfo = function() {
     SysExTest.assertEq(SysExTest.renderDeckInfo(2, 90, true), 'CH B -01:30 L', 'Loop indicator on deck 2');
 };
 
+// --- Physical Segment Layout Tests (4 segments of 17 = 8 + 1 space + 8) ---
+//
+// Mirrors AkaiPush.centerIn and the segmented line builders (v0.4).
+
+SysExTest.BLOCK_W = 8;
+SysExTest.SEG_W = 17;
+SysExTest.SEG_SEPARATOR_COLS = [8, 25, 42, 59];
+
+SysExTest.centerIn = function(str, width) {
+    str = String(str);
+    var pad = width - str.length;
+    if (pad <= 0) return str.substring(0, width);
+    var left = Math.floor(pad / 2);
+    var line = '';
+    while (left-- > 0) line += ' ';
+    line += str;
+    while (line.length < width) line += ' ';
+    return line;
+};
+
+// Builds a full 68-char line from 8 knob values/labels with the physical
+// single-space separator inserted before the even (2nd) knob of each segment.
+SysExTest.buildSegmentedLine = function(blocks) {
+    var line = '';
+    for (var i = 0; i < blocks.length; i++) {
+        if (i % 2 === 1) line += ' ';
+        line += SysExTest.centerIn(blocks[i], SysExTest.BLOCK_W);
+    }
+    while (line.length < 68) line += ' ';
+    return line;
+};
+
+// Builds line 3 for a deck: 16-char bar + space + info centered across 17.
+SysExTest.buildDeckHalf = function(bar, info) {
+    return bar + ' ' + SysExTest.centerIn(info, SysExTest.SEG_W);
+};
+
+SysExTest.testCenterIn = function() {
+    SysExTest.assertEq(SysExTest.centerIn('75%', 8), '  75%   ', 'Center odd-width text in 8');
+    SysExTest.assertEq(SysExTest.centerIn('200%', 8), '  200%  ', 'Center 3-char value in 8');
+    SysExTest.assertEq(SysExTest.centerIn('LOW', 8), '  LOW   ', 'Center short label in 8');
+    SysExTest.assertEq(SysExTest.centerIn('VOL', 8), '  VOL   ', 'Center VOL label in 8');
+    SysExTest.assertEq(SysExTest.centerIn('HI', 8), '   HI   ', 'Center HI label in 8');
+    SysExTest.assertEq(SysExTest.centerIn('12345678', 8), '12345678', 'Exact 8-char string unchanged');
+    SysExTest.assertEq(SysExTest.centerIn('123456789', 8), '12345678', 'Overflow truncates to width');
+    SysExTest.assertEq(SysExTest.centerIn('x', 1), 'x', 'Single char in width 1');
+};
+
+SysExTest.testSegmentedLine1 = function() {
+    // d1LOW=50, d1MID=75, d1HI=200, d1VOL=60, d2LOW=10, d2MID=30, d2HI=100, d2VOL=80
+    var blocks = ['50%', '75%', '200%', '60%', '10%', '30%', '100%', '80%'];
+    var line = SysExTest.buildSegmentedLine(blocks);
+    SysExTest.assertEq(line.length, 68, 'Line 1 is 68 chars');
+    SysExTest.assertEq(line[8], ' ', 'Separator at col 8');
+    SysExTest.assertEq(line[25], ' ', 'Separator at col 25');
+    SysExTest.assertEq(line[42], ' ', 'Separator at col 42');
+    SysExTest.assertEq(line[59], ' ', 'Separator at col 59');
+    SysExTest.assertEq(line.slice(0, 8), '  50%   ', 'Seg1 left knob (d1 LOW)');
+    SysExTest.assertEq(line.slice(9, 17), '  75%   ', 'Seg1 right knob (d1 MID)');
+    SysExTest.assertEq(line.slice(17, 25), '  200%  ', 'Seg2 left knob (d1 HI)');
+    SysExTest.assertEq(line.slice(26, 34), '  60%   ', 'Seg2 right knob (d1 VOL)');
+    SysExTest.assertEq(line.slice(34, 42), '  10%   ', 'Seg3 left knob (d2 LOW)');
+    SysExTest.assertEq(line.slice(43, 51), '  30%   ', 'Seg3 right knob (d2 MID)');
+    SysExTest.assertEq(line.slice(51, 59), '  100%  ', 'Seg4 left knob (d2 HI)');
+    SysExTest.assertEq(line.slice(60, 68), '  80%   ', 'Seg4 right knob (d2 VOL)');
+};
+
+SysExTest.testSegmentedLine2 = function() {
+    var blocks = ['LOW', 'MID', 'HI', 'VOL', 'LOW', 'MID', 'HI', 'VOL'];
+    var line = SysExTest.buildSegmentedLine(blocks);
+    SysExTest.assertEq(line.length, 68, 'Line 2 is 68 chars');
+    SysExTest.assertEq(line[8], ' ', 'Separator at col 8');
+    SysExTest.assertEq(line[25], ' ', 'Separator at col 25');
+    SysExTest.assertEq(line[42], ' ', 'Separator at col 42');
+    SysExTest.assertEq(line[59], ' ', 'Separator at col 59');
+    SysExTest.assertEq(line.slice(0, 8), '  LOW   ', 'Seg1 left knob label LOW');
+    SysExTest.assertEq(line.slice(9, 17), '  MID   ', 'Seg1 right knob label MID');
+    SysExTest.assertEq(line.slice(17, 25), '   HI   ', 'Seg2 left knob label HI');
+    SysExTest.assertEq(line.slice(26, 34), '  VOL   ', 'Seg2 right knob label VOL');
+    // Line 1 and line 2 use the same physical grid, so labels sit directly
+    // under their percentages in the same columns.
+    var line1 = SysExTest.buildSegmentedLine(['50%', '75%', '200%', '60%', '10%', '30%', '100%', '80%']);
+    SysExTest.assertEq(line1.slice(0, 8), '  50%   ', 'Line1 seg1 left knob');
+    SysExTest.assertEq(line.slice(0, 8), '  LOW   ', 'Line2 label aligned under same knob');
+    SysExTest.assertEq(line1.indexOf('LOW'), -1, 'Percent line carries no label');
+};
+
+SysExTest.testSegmentedLine3 = function() {
+    var d1Bar = SysExTest.renderVuBar(0.5, 16);
+    var d2Bar = SysExTest.renderVuBar(0.25, 16);
+    var half1 = SysExTest.buildDeckHalf(d1Bar, 'CH A -01:22 L');
+    var half2 = SysExTest.buildDeckHalf(d2Bar, 'CH B ---:--');
+    var line3 = SysExTest.padRight(half1 + half2, 68);
+    SysExTest.assertEq(line3.length, 68, 'Line 3 is 68 chars');
+    SysExTest.assertEq(line3.slice(0, 16), d1Bar, 'Deck1 VU bar occupies cols 0-15');
+    SysExTest.assertEq(line3[16], ' ', 'Col 16 is the closing space');
+    SysExTest.assertEq(line3.slice(17, 34), '  CH A -01:22 L  ', 'Deck1 info centered in segment 2');
+    SysExTest.assertEq(line3.slice(34, 50), d2Bar, 'Deck2 VU bar occupies cols 34-49');
+    SysExTest.assertEq(line3[50], ' ', 'Col 50 is the closing space');
+    SysExTest.assertEq(line3.slice(51, 68), '   CH B ---:--   ', 'Deck2 info centered in segment 4');
+};
+
 // --- Run All Tests ---
 
 SysExTest.runAll = function() {
@@ -376,6 +478,10 @@ SysExTest.runAll = function() {
     SysExTest.testVuBar();
     SysExTest.testFormatRemaining();
     SysExTest.testRenderDeckInfo();
+    SysExTest.testCenterIn();
+    SysExTest.testSegmentedLine1();
+    SysExTest.testSegmentedLine2();
+    SysExTest.testSegmentedLine3();
     print('=== Tests Complete ===');
 };
 

@@ -1,11 +1,12 @@
 /****************************************************************/
-/*      Akai Push 1 MIDI controller script v0.3                 */
+/*      Akai Push 1 MIDI controller script v0.4                 */
 /*          For Mixxx 2.5.6                                     */
 /*          Stage 2: Mixer view (Deck 1 + Deck 2)               */
 /*                                                              */
-/*      Line 1: EQ/Volume percentages (Deck1 left, Deck2 right) */
-/*      Line 2: Labels LOW MID HI VOL (both decks)              */
-/*      Line 3: Pre-master VU + deck info (CH + remaining time)   */
+/*      Display: 4 physical segments of 17 chars (8+1+8 knobs)  */
+/*      Line 1: EQ/Volume percentages per knob (segmented)      */
+/*      Line 2: Labels LOW MID HI VOL per knob (segmented)      */
+/*      Line 3: Pre-master VU (16) + CH remaining time + [L]    */
 /*      Line 4: Reserved for future use                         */
 /****************************************************************/
 
@@ -68,16 +69,30 @@ AkaiPush.padRight = function(str, len) {
 
 // --- Display Update ---
 
-// Layout (68 chars = two clean deck halves of 34):
-//   Each deck = 34 cols = 4 blocks of 8 chars.
-//   Within a block, the value and its label are both left-aligned in 8,
-//   so the label sits exactly under its percentage.
-//   Line 1: percents        "75%     50%     100%    60%     80%     ..."
-//   Line 2: labels          "LOW     MID     HI      VOL     LOW     ..."
-//   Line 3: VU bar (16 chars) per deck, left-aligned in each 34-col half.
+// Physical display layout (MANDATORY): the 68-char line splits into 4 segments
+// of 17 chars, each under 2 of the 8 knobs: 8 (left knob) + 1 space + 8 (right
+// knob). Content is centered within each 8-char block; the separator is always
+// the literal space character.
+//   seg1: d1LOW,d1MID | seg2: d1HI,d1VOL | seg3: d2LOW,d2MID | seg4: d2HI,d2VOL
+//   Line 1: percents   "  75%     50%    ..." (centered per 8-char block)
+//   Line 2: labels     "  LOW    MID     ..."
+//   Line 3: VU bar (16) in cols 0-15/34-49, "CH A -MM:SS [L]" centered in 17-33/51-67
 
-AkaiPush.BLOCK_W = 8;
-AkaiPush.CHANNEL_W = 34;
+AkaiPush.BLOCK_W = 8;         // width of one knob field
+AkaiPush.SEG_W = 17;          // one physical segment (8 + 1 + 8)
+
+// Centers str in width with spaces (left gets the extra space when odd).
+AkaiPush.centerIn = function(str, width) {
+    str = String(str);
+    var pad = width - str.length;
+    if (pad <= 0) return str.substring(0, width);
+    var left = Math.floor(pad / 2);
+    var line = '';
+    while (left-- > 0) line += ' ';
+    line += str;
+    while (line.length < width) line += ' ';
+    return line;
+};
 
 // Mixxx EQ filters (filterLow/filterMid/filterHigh): raw range 0.0-4.0,
 // neutral at 1.0. Map to a symmetric percentage around the neutral (100%):
@@ -102,28 +117,27 @@ AkaiPush.updateDisplay = function() {
     var vH2 = AkaiPush.eqPercent(engine.getValue('[Channel2]', 'filterHigh'));
     var vV2 = Math.round(engine.getValue('[Channel2]', 'volume') * 100);
 
-    // Line 1: percents, each in an 8-char block
+    // Line 1: percents, one 8-char block per knob, centered, knobs separated
+    // by a single space. Knob order: d1LOW, d1MID, d1HI, d1VOL, d2LOW, d2MID,
+    // d2HI, d2VOL (8 values in the 4 physical segments).
+    var vals = [
+        vL1 + '%', vM1 + '%', vH1 + '%', vV1 + '%',
+        vL2 + '%', vM2 + '%', vH2 + '%', vV2 + '%'
+    ];
     var line1 = '';
-    line1 += AkaiPush.padRight(vL1 + '%', AkaiPush.BLOCK_W);
-    line1 += AkaiPush.padRight(vM1 + '%', AkaiPush.BLOCK_W);
-    line1 += AkaiPush.padRight(vH1 + '%', AkaiPush.BLOCK_W);
-    line1 += AkaiPush.padRight(vV1 + '%', AkaiPush.BLOCK_W);
-    line1 += AkaiPush.padRight(vL2 + '%', AkaiPush.BLOCK_W);
-    line1 += AkaiPush.padRight(vM2 + '%', AkaiPush.BLOCK_W);
-    line1 += AkaiPush.padRight(vH2 + '%', AkaiPush.BLOCK_W);
-    line1 += AkaiPush.padRight(vV2 + '%', AkaiPush.BLOCK_W);
+    for (var i = 0; i < vals.length; i++) {
+        if (i % 2 === 1) line1 += ' ';   // physical space before the 2nd knob of a segment
+        line1 += AkaiPush.centerIn(vals[i], AkaiPush.BLOCK_W);
+    }
     line1 = AkaiPush.padRight(line1, AkaiPush.LCD_LINE_BYTES);
 
-    // Line 2: labels, each in an 8-char block under its percent
+    // Line 2: labels, one per knob, centered under its percent.
+    var labels = ['LOW', 'MID', 'HI', 'VOL', 'LOW', 'MID', 'HI', 'VOL'];
     var line2 = '';
-    line2 += AkaiPush.padRight('LOW', AkaiPush.BLOCK_W);
-    line2 += AkaiPush.padRight('MID', AkaiPush.BLOCK_W);
-    line2 += AkaiPush.padRight('HI', AkaiPush.BLOCK_W);
-    line2 += AkaiPush.padRight('VOL', AkaiPush.BLOCK_W);
-    line2 += AkaiPush.padRight('LOW', AkaiPush.BLOCK_W);
-    line2 += AkaiPush.padRight('MID', AkaiPush.BLOCK_W);
-    line2 += AkaiPush.padRight('HI', AkaiPush.BLOCK_W);
-    line2 += AkaiPush.padRight('VOL', AkaiPush.BLOCK_W);
+    for (var j = 0; j < labels.length; j++) {
+        if (j % 2 === 1) line2 += ' ';   // physical space before the 2nd knob of a segment
+        line2 += AkaiPush.centerIn(labels[j], AkaiPush.BLOCK_W);
+    }
     line2 = AkaiPush.padRight(line2, AkaiPush.LCD_LINE_BYTES);
 
     AkaiPush.sendLCDLine(1, line1);
@@ -224,12 +238,16 @@ AkaiPush.sendLine3 = function() {
     var d1 = AkaiPush.renderDeckInfo(1, r1, AkaiPush.deckInLoop('[Channel1]'));
     var d2 = AkaiPush.renderDeckInfo(2, r2, AkaiPush.deckInLoop('[Channel2]'));
 
-    // Each deck half (34): bar(16) + ' ' + info(12), then pad to 34.
-    var half1 = AkaiPush.renderVuBar(AkaiPush.vuShown.d1, AkaiPush.VU_BAR_WIDTH) + ' ' + d1;
-    var half2 = AkaiPush.renderVuBar(AkaiPush.vuShown.d2, AkaiPush.VU_BAR_WIDTH) + ' ' + d2;
-    var line3 = AkaiPush.padRight(half1, AkaiPush.CHANNEL_W)
-              + AkaiPush.padRight(half2, AkaiPush.CHANNEL_W);
-    line3 = AkaiPush.padRight(line3, AkaiPush.LCD_LINE_BYTES);
+    // Physical layout (4x17): each deck spans 2 segments. Deck 1 = segments
+    // 1-2 (cols 0-33): 16-char VU bar in cols 0-15, col 16 = closing space,
+    // info centered in segment 2 (17-33). Deck 2 = segments 3-4 (cols 34-67).
+    var half1 = AkaiPush.renderVuBar(AkaiPush.vuShown.d1, AkaiPush.VU_BAR_WIDTH)
+              + ' '
+              + AkaiPush.centerIn(d1, AkaiPush.SEG_W);
+    var half2 = AkaiPush.renderVuBar(AkaiPush.vuShown.d2, AkaiPush.VU_BAR_WIDTH)
+              + ' '
+              + AkaiPush.centerIn(d2, AkaiPush.SEG_W);
+    var line3 = AkaiPush.padRight(half1 + half2, AkaiPush.LCD_LINE_BYTES);
 
     AkaiPush.sendLCDLine(3, line3);
 };

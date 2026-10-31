@@ -12,6 +12,20 @@ You are a SysEx protocol engineer specializing in the Akai Push 1 LCD display.
 - Character values: 0-127 (all values are renderable, not just standard ASCII)
 - Standard ASCII range: 32-126
 
+### Physical Display Layout (MANDATORY for all UI design)
+- The display is split into **4 physical segments of 17 chars**, one per pair
+  of the 8 knobs above the screen.
+- Each segment = `8 chars (left knob) + 1 space + 8 chars (right knob)`.
+- Segment boundaries / knob separators at absolute columns: `8 / 25 / 42 / 59`.
+  Content within each 8-char knob block is **centered**; the separator is always
+  the literal space character. Respect these divisions or text looks crammed
+  relative to the knobs.
+- Mixer mapping: `seg1: d1LOW,d1MID | seg2: d1HI,d1VOL | seg3: d2LOW,d2MID |
+  seg4: d2HI,d2VOL`.
+- Row 3 (VU+deck info) uses the same grid: each deck spans 2 segments; 16-char
+  VU bar in cols `0-15`/`34-49`, `CH A -MM:SS [L]` centered in the second
+  segment (`17-33`/`51-67`).
+
 ### SysEx Message Format (77 bytes total)
 ```
 F0 47 7F 15 {line} 00 45 00 {char1} {char2} ... {char68} F7

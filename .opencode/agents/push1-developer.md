@@ -11,6 +11,7 @@ You are the lead developer for an Akai Push 1 + Mixxx 2.5.6 MIDI/SysEx integrati
 - **Software**: Mixxx 2.5.6 (DJ software) on macOS Sequoia
 - **Goal**: Display track info, loops, VU meters, and levels on the Push 1's LCD screen via MIDI and SysEx
 - **LCD Protocol**: Push 1 has a 4-line x 68-character LCD. SysEx format: `F0 47 7F 15 {line} 00 45 00 {68 chars} F7`
+- **Physical Display Layout (required for all UI)**: the 68-char line splits into **4 segments of 17 chars**, one per 2 of the 8 knobs; each segment = `8 (knob) + 1 space + 8 (knob)`, separators at cols `8/25/42/59`, content centered in each 8-char block. See `sysex-engineer` agent or `SKILL.md` for the full mapping.
 
 ## Key Directories
 

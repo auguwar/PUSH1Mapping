@@ -80,14 +80,37 @@ Node con el runtime disponible en la máquina). Incluyen casos del fader (0 %,
 
 ## Layout de pantalla
 
-El LCD se divide en dos **decks**: deck 1 (izquierda) = `[Channel1]`, deck 2 (derecha) = `[Channel2]`. Cada deck ocupa 34 de los 68 caracteres.
+El LCD del Push 1 tiene **8 perillas** sobre el display. La línea de 68
+caracteres se divide **físicamente** en **4 segmentos de 17 caracteres**, cada
+uno bajo 2 perillas: `8 chars (perilla izq) + 1 espacio + 8 chars (perilla
+der)`. La restricción es obligatoria: no respetarla hace que los valores se
+vean apiñados respecto a las perillas.
 
-| Línea | Contenido por deck |
-|-------|--------------------|
-| 1 | Porcentajes de EQ LOW / MID / HI y VOL (0–100% cut, 100–200% boost alrededor del neutro en 100%) |
-| 2 | Etiquetas `LOW MID HI VOL` bajo cada porcentaje |
-| 3 | Vúmetro pre-master (barra estéreo combinada, pico con hold fijo + decaimiento) + `CH A -MM:SS` (tiempo restante; `---:--` sin track) y `L` si el deck tiene un loop activo |
+| Segmento | Columnas | Perilla izq | Espacio | Perilla der |
+|----------|----------|-------------|---------|-------------|
+| 1 | 0-16  | 0-7  | 8  | 9-16  |
+| 2 | 17-33 | 17-24| 25 | 26-33 |
+| 3 | 34-50 | 34-41| 42 | 43-50 |
+| 4 | 51-67 | 51-58| 59 | 60-67 |
+
+Separadores físicos en las columnas **8 / 25 / 42 / 59** (siempre el carácter
+espacio). El contenido de cada bloque de 8 se **centra**.
+
+Deck 1 (izquierda) = `[Channel1]`, deck 2 (derecha) = `[Channel2]`.
+
+| Línea | Contenido |
+|-------|-----------|
+| 1 | Porcentajes de EQ LOW/MID/HI y VOL por perilla (`seg1: d1LOW,d1MID \| seg2: d1HI,d1VOL \| seg3: d2LOW,d2MID \| seg4: d2HI,d2VOL`). EQ: 0–100% cut, 100–200% boost alrededor del neutro en 100% |
+| 2 | Etiquetas `LOW MID HI VOL` centradas bajo cada perilla |
+| 3 | Vúmetro pre-master (barra de 16 en cols 0-15 / 34-49) + `CH A -MM:SS` (tiempo restante; `---:--` sin track) y `L` si el deck tiene loop activo, centrado en el segundo segmento (17-33 / 51-67) |
 | 4 | Reservada |
+
+Ejemplo con deck 1 en loop y deck 2 sin track:
+```
+L1:   100%     117%    100%     50%     50%      100%    200%     25%
+L2:   LOW      MID      HI      VOL     LOW      MID      HI      VOL
+L3:  #############---   CH A -01:22 L  ##########------    CH B ---:--
+```
 
 El tiempo restante se calcula desde `playposition` y `duration` de cada `[ChannelN]`, formateado como `-MM:SS` (minutos capados a 99, sin horas). Se actualiza con un timer de 1 s (el VU usa otro de 50 ms).
 
